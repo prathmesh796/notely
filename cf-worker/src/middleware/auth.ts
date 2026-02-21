@@ -1,6 +1,17 @@
 import { verifyJWT } from "../utils/jwt"
+import { createMiddleware } from 'hono/factory'
 
-export async function authMiddleware(c: any, next: () => Promise<void>) {
+type Bindings = {
+    JWT_SECRET: string
+}
+
+const authMiddleware = createMiddleware<{
+    Bindings: Bindings,
+    Variables: {
+        userId: (str: string) => string
+        user: any
+    }
+}>(async (c, next) => {
     const authHeader = c.req.header("Authorization")
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -22,4 +33,6 @@ export async function authMiddleware(c: any, next: () => Promise<void>) {
     c.set("user", payload)
 
     await next()
-}
+})
+
+export default authMiddleware

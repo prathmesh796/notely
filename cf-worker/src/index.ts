@@ -1,5 +1,5 @@
 import { Hono } from "hono"
-import { authMiddleware } from "./middleware/auth"
+import authMiddleware from "./middleware/auth"
 import authRoutes from "./routes/auth"
 
 export interface Env {
@@ -8,11 +8,14 @@ export interface Env {
 }
 
 const app = new Hono<{ Bindings: Env }>()
+const api = new Hono().basePath('/api')
 
 // Public routes
 app.route("/auth", authRoutes)
 
 // Protected routes — all routes below this line require a valid JWT
-app.use("/api/*", authMiddleware)
+app.use("/*", authMiddleware)
+
+app.get('/', (c) => c.text('Hono!'))
 
 export default app
