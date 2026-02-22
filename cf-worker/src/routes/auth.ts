@@ -13,11 +13,11 @@ const auth = new Hono<{ Bindings: Env }>()
 async function getUserFromDB(
     db: D1Database,
     email: string
-): Promise<{ id: number; email: string; password: string } | null> {
+): Promise<{ id: string; email: string; password_hash: string } | null> {
     const result = await db
-        .prepare("SELECT id, email, password FROM users WHERE email = ?")
+        .prepare("SELECT id, email, password_hash FROM users WHERE email = ?")
         .bind(email)
-        .first<{ id: number; email: string; password: string }>()
+        .first<{ id: string; email: string; password_hash: string }>()
     return result ?? null
 }
 
@@ -41,8 +41,8 @@ auth.post("/register", async (c) => {
     const hashed = await hashPassword(password)
 
     await c.env.notes_app
-        .prepare("INSERT INTO users (email, password) VALUES (?, ?)")
-        .bind(email, hashed)
+        .prepare("INSERT INTO users (id, name, email, password_hash) VALUES (?, ?, ?, ?)")
+        .bind(crypto.randomUUID(), email.split('@')[0], email, hashed)
         .run()
 
     return c.json({ message: "User registered successfully" }, 201)
@@ -66,7 +66,7 @@ auth.post("/login", async (c) => {
         return c.json({ error: "Invalid credentials" }, 401)
     }
 
-    const valid = await comparePassword(password, user.password)
+    const valid = await comparePassword(password, user.password_hash)
     if (!valid) {
         return c.json({ error: "Invalid credentials" }, 401)
     }

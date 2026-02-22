@@ -1,4 +1,5 @@
 import { Hono } from "hono"
+import { cors } from "hono/cors"
 import authMiddleware from "./middleware/auth"
 import authRoutes from "./routes/auth"
 
@@ -8,6 +9,13 @@ export interface Env {
 }
 
 const app = new Hono<{ Bindings: Env }>()
+
+// CORS — allow all origins (tighten in production)
+app.use("/*", cors({
+	origin: "*",
+	allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+	allowHeaders: ["Content-Type", "Authorization"],
+}))
 const api = new Hono().basePath('/api')
 
 // Public routes

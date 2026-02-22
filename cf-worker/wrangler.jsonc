@@ -16,8 +16,10 @@
 	"d1_databases": [
 		{
 			"binding": "notes_app",
-			"database_name": "notes-app",
-			"database_id": "45e392db-5f44-4cb5-8ae6-5f42af5be456",
+			"database_name": "notes_app",
+			"database_id": "4e954dc0-32f2-49ad-a9ce-57b2a1265577",
+			// "database_name": "notes-app", // uncomment this at your side
+			// "database_id": "45e392db-5f44-4cb5-8ae6-5f42af5be456",
 			"remote": true
 		}
 	]
