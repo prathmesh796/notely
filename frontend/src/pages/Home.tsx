@@ -20,7 +20,7 @@ This is a **structured editor** backed by markdown.
 Try editing this text by clicking on it!`;
 
 const Home = () => {
-    const [ast, setAst] = useState<any>(null);
+  const [ast, setAst] = useState<any>(null);
 
   // Parse initial markdown to AST on mount
   useEffect(() => {
@@ -37,15 +37,30 @@ const Home = () => {
 
   // Function to update a specific node in the AST
   const updateNode = (path: number[], newValue: string) => {
+    console.log("Updating node at path:", path, "with value:", newValue);
     if (!ast) return;
     const newAst = JSON.parse(JSON.stringify(ast));
-    let current = newAst;
+
+    // Navigate to the parent of the target node
+    let parent = newAst;
     for (let i = 0; i < path.length - 1; i++) {
-      current = current.children[path[i]];
+      parent = parent.children[path[i]];
     }
     const targetIndex = path[path.length - 1];
-    if (current.children && current.children[targetIndex]) {
-      current.children[targetIndex].value = newValue;
+
+    if (parent.children && parent.children[targetIndex]) {
+      // Re-parse the edited text as markdown to detect inline formatting
+      const parsed = parseMarkdown(newValue);
+      const inlineNodes = parsed.children?.[0]?.children;
+
+      if (inlineNodes && inlineNodes.length > 0) {
+        // Replace the single text node with the parsed inline nodes
+        // (e.g. "AS**hi**" → [text("AS"), strong([text("hi")])])
+        parent.children.splice(targetIndex, 1, ...inlineNodes);
+      } else {
+        // Fallback: just update the value directly
+        parent.children[targetIndex].value = newValue;
+      }
     }
     setAst(newAst);
   };
