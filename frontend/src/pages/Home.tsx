@@ -64,6 +64,30 @@ const Home = () => {
     }
     setAst(newAst);
   };
+
+  // Function to insert a new empty paragraph after the current block
+  const addNodeAfter = (path: number[]) => {
+    if (!ast) return;
+    const newAst = JSON.parse(JSON.stringify(ast));
+
+    // Find the top-level block index (first element in path)
+    const blockIndex = path[0];
+
+    // Create a new empty paragraph node
+    const newParagraph = {
+      type: "paragraph",
+      children: [
+        {
+          type: "text",
+          value: ""
+        }
+      ]
+    };
+
+    // Insert after the current block
+    newAst.children.splice(blockIndex + 1, 0, newParagraph);
+    setAst(newAst);
+  };
   const navigate = useNavigate()
 
   const handleLogout = () => {
@@ -151,7 +175,7 @@ const Home = () => {
         }}>
           {ast &&
             ast.children.map((node: any, i: number) => (
-              <div key={i}>{renderNode(node, [i], updateNode)}</div>
+              <div key={i}>{renderNode(node, [i], updateNode, addNodeAfter)}</div>
             ))}
         </div>
       </main>
