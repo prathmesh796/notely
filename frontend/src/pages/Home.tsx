@@ -1,99 +1,33 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Link } from 'react-router-dom';
-import { parseMarkdown } from '../services/markdownParser';
-import { unified } from 'unified';
-import remarkStringify from 'remark-stringify';
-import { renderNode } from '../components/renderNode';
+import TiptapEditor from '../components/TiptapEditor';
 
 const initialMarkdown = `# Live Markdown Editor
 
-This is a **structured editor** backed by markdown.
+This is a **WYSIWYG editor** backed by markdown.
 
 ## Features
 
-- Parse markdown to AST
-- Render React components from AST
-- Edit inline and convert back to markdown
+- Write in markdown syntax seamlessly
+- Renders as you type
+- Outputs real markdown payload
 - Support for *emphasis* and **strong** text
 
-Try editing this text by clicking on it!`;
+Try editing this text by typing markdown (e.g. # followed by space)!`;
 
 const Home = () => {
-  const [ast, setAst] = useState<any>(null);
-
-  // Parse initial markdown to AST on mount
-  useEffect(() => {
-    setAst(parseMarkdown(initialMarkdown));
-  }, []);
-
-  // Automatically serialize AST back to markdown whenever it changes
-  useEffect(() => {
-    if (ast) {
-      const serialized = unified().use(remarkStringify).stringify(ast);
-      console.log("Auto-serialized markdown:", serialized);
-    }
-  }, [ast]);
-
-  // Function to update a specific node in the AST
-  const updateNode = (path: number[], newValue: string) => {
-    console.log("Updating node at path:", path, "with value:", newValue);
-    if (!ast) return;
-    const newAst = JSON.parse(JSON.stringify(ast));
-
-    // Navigate to the parent of the target node
-    let parent = newAst;
-    for (let i = 0; i < path.length - 1; i++) {
-      parent = parent.children[path[i]];
-    }
-    const targetIndex = path[path.length - 1];
-
-    if (parent.children && parent.children[targetIndex]) {
-      // Re-parse the edited text as markdown to detect inline formatting
-      const parsed = parseMarkdown(newValue);
-      const inlineNodes = parsed.children?.[0]?.children;
-
-      if (inlineNodes && inlineNodes.length > 0) {
-        // Replace the single text node with the parsed inline nodes
-        // (e.g. "AS**hi**" → [text("AS"), strong([text("hi")])])
-        parent.children.splice(targetIndex, 1, ...inlineNodes);
-      } else {
-        // Fallback: just update the value directly
-        parent.children[targetIndex].value = newValue;
-      }
-    }
-    setAst(newAst);
-  };
-
-  // Function to insert a new empty paragraph after the current block
-  const addNodeAfter = (path: number[]) => {
-    if (!ast) return;
-    const newAst = JSON.parse(JSON.stringify(ast));
-
-    // Find the top-level block index (first element in path)
-    const blockIndex = path[0];
-
-    // Create a new empty paragraph node
-    const newParagraph = {
-      type: "paragraph",
-      children: [
-        {
-          type: "text",
-          value: ""
-        }
-      ]
-    };
-
-    // Insert after the current block
-    newAst.children.splice(blockIndex + 1, 0, newParagraph);
-    setAst(newAst);
-  };
+  const [markdown, setMarkdown] = useState<string>(initialMarkdown);
   const navigate = useNavigate()
 
   const handleLogout = () => {
     localStorage.removeItem("token")
     navigate("/")
   }
+
+  const handleEditorChange = (md: string) => {
+    setMarkdown(md);
+    console.log("Auto-serialized markdown:", md);
+  };
 
   return (
     <div style={{ minHeight: "100vh", background: "#0b0d14", color: "#e8eaf0", fontFamily: "Inter, Segoe UI, system-ui, sans-serif" }}>
@@ -173,10 +107,7 @@ const Home = () => {
           backdropFilter: "blur(10px)",
           boxShadow: "0 8px 32px rgba(0,0,0,0.4)"
         }}>
-          {ast &&
-            ast.children.map((node: any, i: number) => (
-              <div key={i}>{renderNode(node, [i], updateNode, addNodeAfter)}</div>
-            ))}
+          <TiptapEditor initialMarkdown={markdown} onChange={handleEditorChange} />
         </div>
       </main>
     </div>
