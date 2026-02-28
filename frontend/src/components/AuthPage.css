@@ -1,0 +1,89 @@
+/* Keyframe animations – kept here because Tailwind can't express arbitrary keyframes inline */
+
+@keyframes blobFloat {
+    from {
+        transform: translateY(0) scale(1);
+    }
+
+    to {
+        transform: translateY(30px) scale(1.06);
+    }
+}
+
+@keyframes cardIn {
+    from {
+        opacity: 0;
+        transform: translateY(24px) scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+        max-height: 0;
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        max-height: 200px;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Utility animation classes */
+.anim-blob {
+    animation: blobFloat 9s ease-in-out infinite alternate;
+}
+
+.anim-blob-delay4 {
+    animation: blobFloat 9s ease-in-out 4s infinite alternate;
+}
+
+.anim-blob-delay7 {
+    animation: blobFloat 9s ease-in-out 7s infinite alternate;
+}
+
+.anim-card-in {
+    animation: cardIn 0.5s cubic-bezier(.22, .8, .29, 1) both;
+}
+
+.anim-slide-down {
+    animation: slideDown 0.3s cubic-bezier(.22, .8, .29, 1) both;
+}
+
+.anim-fade-in {
+    animation: fadeIn 0.25s ease both;
+}
+
+.anim-spin {
+    animation: spin 0.7s linear infinite;
+}
+
+/* Tab slider transition */
+.tab-slider-right {
+    transform: translateX(calc(100% + 4px));
+}
