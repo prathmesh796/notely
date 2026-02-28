@@ -24,6 +24,9 @@ app.route("/auth", authRoutes)
 // Protected routes — all routes below this line require a valid JWT
 app.use("/*", authMiddleware)
 
+import notesRoutes from "./routes/notes"
+app.route("/notes", notesRoutes)
+
 app.get('/', (c) => c.text('Hono!'))
 
 export default app
