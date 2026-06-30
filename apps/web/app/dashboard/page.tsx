@@ -3,15 +3,17 @@ import React from 'react'
 import { signOut } from 'next-auth/react'
 
 import { Button } from '@repo/ui/components/button'
-import { Sidebar, SidebarProvider, SidebarTrigger } from '@repo/ui/components/sidebar'
+import { AppSidebar } from '../../components/appSidebar'
 import { ThemeToggle } from '../../components/theme-toggle'
+import { SidebarProvider } from '@repo/ui/components/sidebar'
+import { SidebarTrigger } from '@repo/ui/components/sidebar'
 
 export default function Dashboard() {
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background text-foreground">
         {/* Sidebar */}
-        <Sidebar className="border-r border-border/40 bg-card" />
+        <AppSidebar />
 
         {/* Main Content */}
         <div className="flex flex-col flex-1 min-w-0">
