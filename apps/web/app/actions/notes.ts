@@ -1,61 +1,66 @@
-import { getSession } from "next-auth/react";
+import type { Note } from "@repo/types";
 
-export async function getNotes() {
-    const session = await getSession();
-    const response = await fetch("http://localhost:3000/api/notes", {
-        headers: {
-            "Authorization": `Bearer ${session?.access_token}`,
-            "Content-Type": "application/json"
-        },
-    });
-    return await response.json();
+type NotesResponse = {
+  notes: Note[];
+};
+
+type NoteResponse = {
+  note: Note;
+};
+
+async function request<T>(url: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(url, init);
+  const data = (await response.json()) as T & { error?: string; message?: string };
+
+  if (!response.ok) {
+    throw new Error(data.error ?? data.message ?? "The notes request failed");
+  }
+
+  return data;
 }
 
-export async function getNote(id: string) {
-    const session = await getSession();
-    const response = await fetch(`http://localhost:3000/api/notes/${id}`, {
-        headers: {
-            "Authorization": `Bearer ${session?.accessToken}`,
-            "Content-Type": "application/json"
-        },
-    });
-    return await response.json();
+export async function getNotes(): Promise<Note[]> {
+  const data = await request<NotesResponse>("/api/notes");
+  return data.notes;
 }
 
-export async function createNote(note: any) {
-    const session = await getSession();
-    const response = await fetch("http://localhost:3000/api/notes", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${session?.accessToken}`,
-        },
-        body: JSON.stringify(note),
-    });
-    return await response.json();
+export async function getNote(id: string): Promise<Note> {
+  const data = await request<NoteResponse>(`/api/notes/${encodeURIComponent(id)}`);
+  return data.note;
 }
 
-export async function deleteNote(id: string) {
-    const session = await getSession();
-    const response = await fetch(`http://localhost:3000/api/notes/${id}`, {
-        method: "DELETE",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${session?.accessToken}`,
-        },
-    });
-    return await response.json();
+export async function createNote(): Promise<Note> {
+  const data = await request<NoteResponse>("/api/notes", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      title: "",
+      content: "",
+    }),
+  });
+
+  return data.note;
 }
 
-export async function updateNote(id: string, note: any) {
-    const session = await getSession();
-    const response = await fetch(`http://localhost:3000/api/notes/${id}`, {
-        method: "PUT",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${session?.access_token}`,
-        },
-        body: JSON.stringify(note),
-    });
-    return await response.json();
+export async function deleteNote(id: string): Promise<Note> {
+  const data = await request<NoteResponse>(
+    `/api/notes/${encodeURIComponent(id)}`,
+    { method: "DELETE" },
+  );
+  return data.note;
+}
+
+export async function updateNote(
+  id: string,
+  note: Pick<Note, "title" | "content">,
+): Promise<Note> {
+  const data = await request<NoteResponse>(
+    `/api/notes/${encodeURIComponent(id)}`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(note),
+    },
+  );
+  return data.note;
 }

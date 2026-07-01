@@ -11,8 +11,11 @@ import {
 import { Button } from "@repo/ui/components/button"
 import { createNote } from "../app/actions/notes"
 import { signOut } from "next-auth/react";
+import Link from "next/link";
 
-export function AppSidebar() {
+export function AppSidebar(params: { notes: { id: string; title: string }[] }) {
+  const { notes } = params;
+
   return (
     <Sidebar className="border-r border-border/40 bg-card">
       <SidebarHeader>
@@ -29,8 +32,11 @@ export function AppSidebar() {
         <SidebarGroup>
             <SidebarGroupLabel>Your Notes</SidebarGroupLabel>
             <SidebarGroupContent>
-                <SidebarMenuButton>Note 1</SidebarMenuButton>
-                <SidebarMenuButton>Note 2</SidebarMenuButton>
+                {notes.map((note) => (
+                    <Link key={note.id} href={`/dashboard/${encodeURIComponent(note.id)}`}>
+                        <SidebarMenuButton>{note.title || "Untitled Note"}</SidebarMenuButton>
+                    </Link>
+                ))}
             </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>

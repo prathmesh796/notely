@@ -61,7 +61,7 @@ export default function Page() {
       <main className="flex-1 flex flex-col items-center justify-center relative overflow-hidden">
         {/* Background decorative elements */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-size:24px_24px"></div>
-        <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-primary/20 opacity-20 blur-[100px]"></div>
+        <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-77.5 w-77.5 rounded-full bg-primary/20 opacity-20 blur-[100px]"></div>
         
         <div className="container px-4 mx-auto md:px-6 relative z-10 flex flex-col items-center text-center space-y-8 py-24 md:py-32">
           <div className="inline-flex items-center rounded-full border border-border bg-muted/50 px-3 py-1 text-sm text-muted-foreground backdrop-blur-sm transition-colors hover:bg-muted/80">
@@ -70,7 +70,7 @@ export default function Page() {
           </div>
           
           <h1 className="text-5xl md:text-7xl font-extrabold tracking-tighter max-w-4xl">
-            Capture your thoughts with <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-muted-foreground">clarity.</span>
+            Capture your thoughts with <span className="bg-clip-text bg-linear-to-r from-primary to-muted-foreground">clarity.</span>
           </h1>
           
           <p className="max-w-2xl leading-normal text-muted-foreground sm:text-xl sm:leading-8">

@@ -1,95 +1,131 @@
-import NextAuth from "next-auth/next"
-import GoogleProvider from "next-auth/providers/google"
-import CredentialsProvider from "next-auth/providers/credentials"
-import prisma  from "../../../../utils/db"
-import bcryptjs from "bcryptjs"
+import bcryptjs from "bcryptjs";
+import NextAuth, { type DefaultSession, type NextAuthOptions } from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 
-export const authOptions = {
+import prisma from "../../../../utils/db";
+
+declare module "next-auth" {
+  interface Session {
+    accessToken?: string;
+    refreshToken?: string | null;
+    user: DefaultSession["user"] & {
+      id: string;
+    };
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    id?: string;
+    accessToken?: string;
+    refreshToken?: string | null;
+  }
+}
+
+export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       id: "credentials",
       name: "Credentials",
       credentials: {
-        email: { label: "Email", type: "text" },
-        password: { label: "Password", type: "password" }
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
+        if (!credentials?.email || !credentials.password) {
+          throw new Error("InvalidCredentials");
+        }
 
-        const user = await prisma.user.findUnique({ where: { email: credentials?.email } });
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email },
+        });
 
         if (!user) {
           throw new Error("UserNotFound");
         }
 
-        if (user && credentials?.password && bcryptjs.compareSync(credentials.password, user.password)) {
-          return {
-            id: user.id,
-            email: user.email
-          };
-        }
-        else {
+        const passwordMatches = await bcryptjs.compare(
+          credentials.password,
+          user.password,
+        );
+
+        if (!passwordMatches) {
           throw new Error("InvalidCredentials");
         }
-      }
+
+        return { id: user.id, email: user.email };
+      },
     }),
 
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+      // eslint-disable-next-line turbo/no-undeclared-env-vars -- runtime-only secret
+      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
+      // eslint-disable-next-line turbo/no-undeclared-env-vars -- runtime-only secret
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
     }),
-
   ],
 
   pages: {
-    signIn: "/login", // Custom login page
-    error: "/login"   // Redirect to login on error
+    signIn: "/login",
+    error: "/login",
   },
 
   callbacks: {
-    async session({ session, token }: any) {
-      if (token) {
+    async session({ session, token }) {
+      if (token.id) {
         session.user.id = token.id;
-        session.accessToken = token.accessToken;
-        session.refreshToken = token.refreshToken || null;
       }
+
+      session.accessToken = token.accessToken;
+      session.refreshToken = token.refreshToken ?? null;
+
       return session;
     },
-    async jwt({ token, user, account }: any) {
+
+    async jwt({ token, user, account }) {
       if (user) {
-        let dbUser = await prisma.user.findUnique({ where: { email: user.email } });
+        if (!user.email) {
+          throw new Error("EmailRequired");
+        }
+
+        let dbUser = await prisma.user.findUnique({
+          where: { email: user.email },
+        });
 
         if (!dbUser) {
-          const salt = await bcryptjs.genSalt(10)
-          const hashedPassword = await bcryptjs.hash(user.password || Math.random().toString(36).slice(-8), salt)
+          const generatedPassword = Math.random().toString(36).slice(2);
+          const hashedPassword = await bcryptjs.hash(generatedPassword, 10);
+
           dbUser = await prisma.user.create({
             data: {
-              id: user.id,
               email: user.email,
               password: hashedPassword,
-            }
+            },
           });
         }
 
         token.id = dbUser.id;
       }
 
-      // 🆕 Save Google tokens
       if (account?.provider === "google") {
         token.accessToken = account.access_token;
-        token.refreshToken = account.refresh_token;
+        token.refreshToken = account.refresh_token ?? token.refreshToken ?? null;
       }
 
       return token;
     },
-    async redirect({ url, baseUrl }: any) {
+    
+    async redirect({ url, baseUrl }) {
       return url.startsWith(baseUrl) ? url : baseUrl;
-    }
+    },
   },
-
+  // eslint-disable-next-line turbo/no-undeclared-env-vars -- runtime-only secret
   secret: process.env.NEXTAUTH_SECRET,
-  debug: true,
-}
+  // eslint-disable-next-line turbo/no-undeclared-env-vars -- provided by Next.js
+  debug: process.env.NODE_ENV === "development",
+};
 
-export const handler = NextAuth(authOptions)
+const handler = NextAuth(authOptions);
 
-export { handler as GET, handler as POST }
+export { handler as GET, handler as POST };

@@ -1,8 +1,10 @@
 import React from 'react'
 
-const Note = () => {
+const Note = (params: { noteId: string }) => {
+  const { noteId } = params;
+  
   return (
-    <div>Note</div>
+    <div>Note: {noteId}</div>
   )
 }
 
