@@ -2,20 +2,28 @@
 import React, { useState, useEffect } from 'react'
 import { signOut } from 'next-auth/react'
 import { Button } from '@repo/ui/components/button'
+import { Spinner } from '@repo/ui/components/spinner'
 import { AppSidebar } from '../../components/appSidebar'
 import { ThemeToggle } from '../../components/theme-toggle'
-import { SidebarTrigger } from '@repo/ui/components/sidebar'
+import { SidebarInset, SidebarTrigger } from '@repo/ui/components/sidebar'
 import { getNotes, createNote, deleteNote } from '../actions/notes'
 import type { Note } from '@repo/types'
 import Link from 'next/link';
 
 export default function Dashboard() {
+  const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState<Note[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchNotes = async () => {
-      const data = await getNotes();
-      setNotes(data);
+      try {
+        setNotes(await getNotes());
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Unable to load notes");
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchNotes();
@@ -31,13 +39,19 @@ export default function Dashboard() {
     setNotes((prevNotes) => prevNotes.filter((note) => note.id !== id));
   };
 
-  return (
-    <div className="flex min-h-screen w-full bg-background text-foreground">
-      {/* Sidebar */}
-      <AppSidebar notes={notes} />
+  if(loading){
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center bg-background text-foreground">
+        <Spinner className="size-8" />
+      </div>
+    )
+  }
 
-      {/* Main Content */}
-      <div className="flex flex-col flex-1 min-w-0">
+  return (
+    <>
+      <AppSidebar notes={notes.map(({ id, title }) => ({ id, title }))} />
+
+      <SidebarInset className="min-h-screen min-w-0 text-foreground">
         <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b border-border/40 bg-background/95 px-6 backdrop-blur supports-backdrop-filter:bg-background/60">
           <SidebarTrigger />
           <div className="flex-1">
@@ -50,7 +64,7 @@ export default function Dashboard() {
         </header>
 
         <main className="flex-1 overflow-auto p-6 md:p-8">
-          <div className="mx-auto max-w-4xl space-y-8">
+          <div className="mx-auto w-full max-w-5xl space-y-8">
             <div>
               <h2 className="text-3xl font-bold tracking-tight">Notes</h2>
               <p className="text-muted-foreground mt-2">
@@ -58,14 +72,16 @@ export default function Dashboard() {
               </p>
             </div>
 
-            {notes.length > 0 ? (
+            {error ? (
+              <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
+                {error}
+              </div>
+            ) : notes.length > 0 ? (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {notes.map((note) => (
                   <div key={note.id} className="relative rounded-lg border border-border bg-card p-4 shadow-sm hover:shadow-md transition-shadow">
                     <Link href={`/dashboard/${encodeURIComponent(note.id)}`} className="">
-                      <h3 className="text-lg font-semibold">{note.title || "Untitled Note"}</h3>
-                      <p className="mt-2 text-sm text-muted-foreground">{note.content || "No content"}</p>
-
+                      <h3 className="text-lg font-semibold">{note.title}</h3>
                     </Link>
                     <Button
                       variant="destructive"
@@ -93,7 +109,7 @@ export default function Dashboard() {
             )}
           </div>
         </main>
-      </div>
-    </div >
+      </SidebarInset>
+    </>
   )
 }

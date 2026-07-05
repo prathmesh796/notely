@@ -58,7 +58,7 @@ export default function Page() {
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-center relative overflow-hidden">
+      <main className="flex-col items-center justify-center relative overflow-hidden">
         {/* Background decorative elements */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-size:24px_24px"></div>
         <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-77.5 w-77.5 rounded-full bg-primary/20 opacity-20 blur-[100px]"></div>

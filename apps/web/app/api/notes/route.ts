@@ -1,11 +1,39 @@
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
+import { S3Client, PutObjectCommand, DeleteObjectCommand, type S3ClientConfig } from "@aws-sdk/client-s3";
 
 import prisma from "../../../utils/db";
 import { authOptions } from "../auth/[...nextauth]/route";
 
+type RouteContext = {
+  params: Promise<{ note: string }>;
+};
+
+const r2Config: S3ClientConfig = {
+  region: "auto",
+  endpoint: process.env.R2_ENDPOINT,
+  credentials: {
+    accessKeyId: process.env.R2_ACCESS_KEY_ID || "",
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || "",
+  },
+};
+
+const r2 = new S3Client(r2Config);
+
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "An unexpected error occurred";
+}
+
+async function authenticatedUserId(): Promise<string | null> {
+  const session = await getServerSession(authOptions);
+  return session?.user.id ?? null;
+}
+
+function unauthorized() {
+  return NextResponse.json(
+    { message: "Unauthorized", success: false },
+    { status: 401 },
+  );
 }
 
 export async function GET() {
@@ -46,21 +74,68 @@ export async function POST(request: Request) {
 
     const body = (await request.json()) as {
       title?: string;
-      content?: string;
     };
 
     const note = await prisma.note.create({
       data: {
-        title: body.title ?? "",
-        content: body.content ?? "",
-        userId: session.user.id,
+        title: body.title || "Untitled Note",
+        userId: session.user.id
       },
     });
+
+    const putObjectCommand = new PutObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME,
+      Key: note.id,
+      Body: "",
+    });
+
+    const putNote = await r2.send(putObjectCommand);
+    if(!putNote.$metadata.httpStatusCode || putNote.$metadata.httpStatusCode >= 400) {
+      return NextResponse.json(
+        { message: "Failed to create note content in R2", success: false },
+        { status: 500 },
+      );
+    }
 
     return NextResponse.json(
       { message: "Note created successfully", success: true, note },
       { status: 201 },
     );
+  } catch (error: unknown) {
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
+  }
+}
+
+export async function DELETE(_request: Request, { params }: RouteContext) {
+  try {
+    const userId = await authenticatedUserId();
+
+    if (!userId) return unauthorized();
+
+    const { note: noteId } = await params;
+    const note = await prisma.note.delete({
+      where: { id: noteId, userId },
+    });
+
+    const deleteObjectCommand = new DeleteObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME,
+      Key: noteId,
+    });
+
+    const deleteNote = await r2.send(deleteObjectCommand);
+
+    if(!deleteNote.$metadata.httpStatusCode || deleteNote.$metadata.httpStatusCode >= 400) {
+      return NextResponse.json(
+        { message: "Failed to delete note content from R2", success: false },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({
+      message: "Note deleted successfully",
+      success: true,
+      note,
+    });
   } catch (error: unknown) {
     return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
