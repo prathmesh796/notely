@@ -1,12 +1,17 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
   "ui": "tui",
-  "globalEnv": ["DATABASE_URL", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "R2_BUCKET_NAME", "R2_ENDPOINT", "R2_TOKEN_VALUE", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
+    },
+    "web#build": {
+      "env": ["DATABASE_URL", "NEXTAUTH_SECRET", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "R2_BUCKET_NAME", "R2_ENDPOINT", "R2_TOKEN_VALUE", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY"]
+    },
+    "@repo/database#db:generate": {
+      "env": ["DATABASE_URL"]
     },
     "lint": {
       "dependsOn": ["^lint"]
