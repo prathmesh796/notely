@@ -43,6 +43,14 @@ export async function GET(_request: Request, { params }: RouteContext) {
     if (!userId) return unauthorized();
 
     const { note: noteId } = await params;
+
+    if(!noteId) {
+      return NextResponse.json(
+        { message: "Note ID is required", success: false },
+        { status: 400 },
+      );
+    }
+
     const note = await prisma.note.findUnique({
       where: { id: noteId, userId },
     });
@@ -128,6 +136,41 @@ export async function PUT(request: Request, { params }: RouteContext) {
 
     return NextResponse.json({
       message: "Note updated successfully",
+      success: true,
+      note,
+    });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
+  }
+}
+
+export async function DELETE(_request: Request, { params }: RouteContext) {
+  try {
+    const userId = await authenticatedUserId();
+
+    if (!userId) return unauthorized();
+
+    const { note: noteId } = await params;
+    const note = await prisma.note.delete({
+      where: { id: noteId, userId },
+    });
+
+    const deleteObjectCommand = new DeleteObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME,
+      Key: noteId,
+    });
+
+    const deleteNote = await r2.send(deleteObjectCommand);
+
+    if (!deleteNote.$metadata.httpStatusCode || deleteNote.$metadata.httpStatusCode >= 400) {
+      return NextResponse.json(
+        { message: "Failed to delete note content from R2", success: false },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({
+      message: "Note deleted successfully",
       success: true,
       note,
     });

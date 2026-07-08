@@ -42,7 +42,7 @@ const Auth = () => {
                     setError("Failed to sign up");
                 }
             }
-        } catch (err) {
+        } catch {
             setError("Something went wrong");
         } finally {
             setLoading(false);
@@ -50,7 +50,7 @@ const Auth = () => {
     };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background text-foreground relative overflow-hidden">
+    <div className="relative flex min-h-screen w-full flex-col overflow-hidden bg-background text-foreground">
         {/* Abstract background */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-size:[24px_24px]"></div>
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] -z-10"></div>
@@ -128,7 +128,7 @@ const Auth = () => {
                 <div className="text-center text-sm">
                     {authType === "login" ? (
                         <span className="text-muted-foreground">
-                            Don't have an account?{" "}
+                            Don&apos;t have an account?{" "}
                             <button onClick={() => setAuthType("signup")} className="font-medium text-primary hover:underline" type="button">
                                 Sign up
                             </button>

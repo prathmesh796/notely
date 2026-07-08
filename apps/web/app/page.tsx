@@ -39,7 +39,7 @@ export default function Page() {
   }, [session, router]);
 
   return (
-    <div className="flex flex-col min-h-screen bg-background text-foreground">
+    <div className="flex min-h-screen w-full flex-col bg-background text-foreground">
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
         <div className="container flex h-16 mx-auto items-center justify-between px-8">
           <div className="flex items-center gap-2">
@@ -58,7 +58,7 @@ export default function Page() {
         </div>
       </header>
 
-      <main className="flex-col items-center justify-center relative overflow-hidden">
+      <main className="relative flex flex-1 flex-col items-center justify-center overflow-hidden">
         {/* Background decorative elements */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-size:24px_24px"></div>
         <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-77.5 w-77.5 rounded-full bg-primary/20 opacity-20 blur-[100px]"></div>

@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import SessionProvider from "../utils/SessionProvider";
 import { ThemeProvider } from "../components/theme-provider";
-import { SidebarProvider } from '@repo/ui/components/sidebar'
+import { Toaster } from "@repo/ui/components/sonner"
 
 const geist = Geist({ subsets: ["latin"] });
 
@@ -28,9 +28,10 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <SidebarProvider>{children}</SidebarProvider>
+            {children}
           </ThemeProvider>
         </SessionProvider>
+        <Toaster />
       </body>
     </html>
   );

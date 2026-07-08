@@ -6,6 +6,7 @@ type NotesResponse = {
 
 type NoteResponse = {
   note: Note;
+  content: string;
 };
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
@@ -25,9 +26,8 @@ export async function getNotes(): Promise<Note[]> {
 }
 
 export async function getNote(id: string): Promise<{note: Note; content: string }> {
-  console.log(id)
   const data = await request<NoteResponse>(`/api/notes/${encodeURIComponent(id)}`);
-  return data as { note: Note; content: string };
+  return { note: data.note, content: data.content };
 }
 
 export async function createNote(): Promise<Note> {
