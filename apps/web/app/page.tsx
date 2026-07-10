@@ -48,11 +48,11 @@ export default function Page() {
           </div>
           <nav className="flex items-center gap-4">
             <ThemeToggle />
-            <Link href="/auth" className={buttonVariants({ variant: "ghost" })}>
+            <Link href="/auth?auth=login" className={buttonVariants({ variant: "ghost" })}>
               Log in
             </Link>
-            <Link href="/auth" className={buttonVariants({ variant: "default" })}>
-              Sign up
+            <Link href="/auth?auth=signin" className={buttonVariants({ variant: "default" })}>
+              Sign in
             </Link>
           </nav>
         </div>

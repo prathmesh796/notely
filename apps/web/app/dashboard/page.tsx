@@ -1,24 +1,28 @@
 "use client"
 import React, { useState, useEffect } from 'react'
-import { signOut } from 'next-auth/react'
 import { Button } from '@repo/ui/components/button'
 import { Spinner } from '@repo/ui/components/spinner'
+import { Tabs, TabsList, TabsTrigger } from "@repo/ui/components/tabs"
 import { AppSidebar } from '../../components/appSidebar'
 import { ThemeToggle } from '../../components/theme-toggle'
 import { SidebarInset, SidebarTrigger } from '@repo/ui/components/sidebar'
-import { getNotes, createNote, deleteNote } from '../actions/notes'
+import { getNotes, createNote } from '../actions/notes'
 import type { Note } from '@repo/types'
-import Link from 'next/link';
+import { dashboardNotes } from '../../components/dashboard-notes';
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState<Note[]>([]);
+  const [sharedNotes, setSharedNotes] = useState<Note[]>([]);
+  const [selectedTab, setSelectedTab] = useState<"notes" | "shared">("notes");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchNotes = async () => {
       try {
-        setNotes(await getNotes());
+        const { notes, sharedNotes } = await getNotes();
+        setNotes(notes);
+        setSharedNotes(sharedNotes);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unable to load notes");
       } finally {
@@ -34,12 +38,7 @@ export default function Dashboard() {
     setNotes((prevNotes) => [...prevNotes, newNote]);
   };
 
-  const handleDeleteNote = async (id: string) => {
-    await deleteNote(id);
-    setNotes((prevNotes) => prevNotes.filter((note) => note.id !== id));
-  };
-
-  if(loading){
+  if (loading) {
     return (
       <div className="flex min-h-screen w-full items-center justify-center bg-background text-foreground">
         <Spinner className="size-8" />
@@ -59,7 +58,6 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center gap-4">
             <ThemeToggle />
-            <Button variant="outline" size="sm" onClick={() => signOut()}>Log out</Button>
           </div>
         </header>
 
@@ -72,32 +70,25 @@ export default function Dashboard() {
               </p>
             </div>
 
+            <Tabs defaultValue="notes" value={selectedTab} onValueChange={(value) => setSelectedTab(value as "notes" | "shared")}>
+              <TabsList variant="line">
+                <TabsTrigger value="notes">Your Notes</TabsTrigger>
+                <TabsTrigger value="shared">Shared with you</TabsTrigger>
+              </TabsList>
+            </Tabs>
+
             {error ? (
               <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
                 {error}
               </div>
-            ) : notes.length > 0 ? (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {notes.map((note) => (
-                  <div key={note.id} className="relative rounded-lg border border-border bg-card p-4 shadow-sm hover:shadow-md transition-shadow">
-                    <Link href={`/dashboard/${encodeURIComponent(note.id)}`} className="">
-                      <h3 className="text-lg font-semibold">{note.title}</h3>
-                    </Link>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-2 right-2"
-                      onClick={() => handleDeleteNote(note.id)}
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                ))}
-              </div>
+            ) : selectedTab === "notes" && notes.length > 0 ? (
+              <dashboardNotes notesType="notes" notes={notes} setNotes={setNotes} />
+            ) : selectedTab === "shared" && sharedNotes.length > 0 ? (
+              <dashboardNotes notesType="shared" notes={sharedNotes} setNotes={setSharedNotes} />
             ) : (
               <div className="flex min-h-100 flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card text-card-foreground shadow-sm">
                 <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
-                  {/* Note icon */}
+                  {/* Note icon */} 
                   <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><line x1="16" x2="8" y1="13" y2="13" /><line x1="16" x2="8" y1="17" y2="17" /><line x1="10" x2="8" y1="9" y2="9" /></svg>
                 </div>
                 <h3 className="mt-4 text-lg font-semibold">No notes yet</h3>

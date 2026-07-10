@@ -4,10 +4,9 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarHeader,
-  SidebarGroupLabel,
-  SidebarGroupContent,
-  SidebarMenuButton
+  SidebarGroupContent
 } from "@repo/ui/components/sidebar"
+import { NavMain } from "./nav-main"
 import { Button } from "@repo/ui/components/button"
 import { createNote } from "../app/actions/notes"
 import { signOut } from "next-auth/react";
@@ -16,6 +15,11 @@ import type { SidebarNote } from "@repo/types";
 
 export function AppSidebar(params: { notes: SidebarNote[] | null }) {
   const { notes } = params;
+
+  const items = notes?.map((note) => ({
+    title: note.title,
+    url: `/dashboard/${encodeURIComponent(note.id)}`,
+  })) || [];
 
   return (
     <Sidebar className="border-r border-border/40 bg-card">
@@ -26,25 +30,15 @@ export function AppSidebar(params: { notes: SidebarNote[] | null }) {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-            <SidebarGroupContent>
-                <Button className="w-full" onClick={createNote}>+ Create Note</Button>
-            </SidebarGroupContent>
+          <SidebarGroupContent>
+            <Button className="w-full" onClick={createNote}>+ Create Note</Button>
+          </SidebarGroupContent>
         </SidebarGroup>
-        <SidebarGroup>
-            <SidebarGroupLabel>Your Notes</SidebarGroupLabel>
-            <SidebarGroupContent>
-                {notes?.map((note) => (
-                    <Link key={note.id} href={`/dashboard/${encodeURIComponent(note.id)}`}>
-                        <SidebarMenuButton>
-                          {note.title || "Untitled Note"}
-                        </SidebarMenuButton>
-                    </Link>
-                ))}
-            </SidebarGroupContent>
-        </SidebarGroup>
+        <NavMain items={notes?.map((note) => ({ title: note.title, url: `/dashboard/${encodeURIComponent(note.id)}` })) || []} />
+        <NavMain items={notes?.map((note) => ({ title: note.title, url: `/dashboard/${encodeURIComponent(note.id)}` })) || []} />
       </SidebarContent>
       <SidebarFooter >
-        <Button variant="outline" onClick={() => signOut({ callbackUrl: "/" })}>Log out</Button>
+        <Button variant="destructive" onClick={() => signOut({ callbackUrl: "/" })}>Log out</Button>
       </SidebarFooter>
     </Sidebar>
   )

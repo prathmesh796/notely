@@ -35,10 +35,19 @@ export async function GET() {
       where: { userId: session.user.id },
     });
 
+    const sharedNotes = await prisma.note.findMany({
+      where: {
+        editors: {
+          has: session.user.id
+        }
+      }
+    });
+
     return NextResponse.json({
       message: "Notes fetched successfully",
       success: true,
       notes,
+      sharedNotes,
     });
   } catch (error: unknown) {
     return NextResponse.json({ error: errorMessage(error) }, { status: 500 });

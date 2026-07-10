@@ -1,7 +1,6 @@
 "use client"
 
 import React, { useState, useEffect } from 'react'
-import { signOut } from 'next-auth/react'
 import dynamic from 'next/dynamic'
 import { useParams } from 'next/navigation'
 import { Button } from '@repo/ui/components/button'
@@ -9,8 +8,9 @@ import { Spinner } from '@repo/ui/components/spinner'
 import { toast } from "sonner"
 import { AppSidebar } from '../../../components/appSidebar'
 import { ThemeToggle } from '../../../components/theme-toggle'
+import { AccessDialog } from '../../../components/accessDialog'
 import { SidebarTrigger } from '@repo/ui/components/sidebar'
-import { getNote, getNotes, updateNote } from '../../actions/notes'
+import { getNote, getNotes, updateNoteMetadata, updateNoteContent } from '../../actions/notes'
 import type { Note, SidebarNote } from '@repo/types'
 
 const MarkdownEditor = dynamic(() => import('../../../components/markdown-editor'), {
@@ -44,6 +44,10 @@ const NotePage = () => {
     void fetchNote();
   }, [noteId, error]);
 
+  const handleSave = async () => {
+
+  }
+
   return (
     <div className="flex min-h-screen w-full bg-background text-foreground">
       {/* Sidebar */}
@@ -61,9 +65,9 @@ const NotePage = () => {
             />
           </div>
           <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" onClick={() => updateNote(noteId, { title: note?.title || "Untitled Note" }, noteContent)}>Save</Button>
+            <AccessDialog noteId={noteId} editors={note?.editors || []} />
+            <Button variant="outline" size="sm" onClick={() => updateNoteContent(noteId, noteContent)}>Save</Button>
             <ThemeToggle />
-            <Button variant="outline" size="sm" onClick={() => signOut()}>Log out</Button>
           </div>
         </header>
 

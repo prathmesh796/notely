@@ -144,6 +144,33 @@ export async function PUT(request: Request, { params }: RouteContext) {
   }
 }
 
+export async function PATCH(request: Request, { params }: RouteContext) {
+  try {
+    const userId = await authenticatedUserId();
+
+    if (!userId) return unauthorized();
+
+    const { note: noteId } = await params;
+    const body = (await request.json()) as {
+      title?: string;
+      editors?: string[];
+    };
+
+    const note = await prisma.note.update({
+      where: { id: noteId, userId },
+      data: { ...body }
+    });
+
+    return NextResponse.json({
+      message: "Note updated successfully",
+      success: true,
+      note,
+    });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
+  }
+}
+
 export async function DELETE(_request: Request, { params }: RouteContext) {
   try {
     const userId = await authenticatedUserId();
