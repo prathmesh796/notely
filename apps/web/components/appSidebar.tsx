@@ -13,8 +13,8 @@ import { signOut } from "next-auth/react";
 import Link from "next/link";
 import type { SidebarNote } from "@repo/types";
 
-export function AppSidebar(params: { notes: SidebarNote[] | null }) {
-  const { notes } = params;
+export function AppSidebar(params: { notes: SidebarNote[] | null; sharedNotes?: SidebarNote[] | null }) {
+  const { notes, sharedNotes } = params;
 
   const items = notes?.map((note) => ({
     title: note.title,
@@ -34,8 +34,8 @@ export function AppSidebar(params: { notes: SidebarNote[] | null }) {
             <Button className="w-full" onClick={createNote}>+ Create Note</Button>
           </SidebarGroupContent>
         </SidebarGroup>
-        <NavMain items={notes?.map((note) => ({ title: note.title, url: `/dashboard/${encodeURIComponent(note.id)}` })) || []} />
-        <NavMain items={notes?.map((note) => ({ title: note.title, url: `/dashboard/${encodeURIComponent(note.id)}` })) || []} />
+        <NavMain label="Your notes" items={items} />
+        <NavMain label="Shared with you" items={sharedNotes?.map((note) => ({ title: note.title, url: `/dashboard/${encodeURIComponent(note.id)}` })) || []} />
       </SidebarContent>
       <SidebarFooter >
         <Button variant="destructive" onClick={() => signOut({ callbackUrl: "/" })}>Log out</Button>

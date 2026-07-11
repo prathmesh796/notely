@@ -8,7 +8,7 @@ import { ThemeToggle } from '../../components/theme-toggle'
 import { SidebarInset, SidebarTrigger } from '@repo/ui/components/sidebar'
 import { getNotes, createNote } from '../actions/notes'
 import type { Note } from '@repo/types'
-import { dashboardNotes } from '../../components/dashboard-notes';
+import { DashboardNotes } from '../../components/dashboard-notes';
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
@@ -48,7 +48,10 @@ export default function Dashboard() {
 
   return (
     <>
-      <AppSidebar notes={notes.map(({ id, title }) => ({ id, title }))} />
+      <AppSidebar
+        notes={notes.map(({ id, title }) => ({ id, title }))}
+        sharedNotes={sharedNotes.map(({ id, title }) => ({ id, title }))}
+      />
 
       <SidebarInset className="min-h-screen min-w-0 text-foreground">
         <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b border-border/40 bg-background/95 px-6 backdrop-blur supports-backdrop-filter:bg-background/60">
@@ -82,20 +85,22 @@ export default function Dashboard() {
                 {error}
               </div>
             ) : selectedTab === "notes" && notes.length > 0 ? (
-              <dashboardNotes notesType="notes" notes={notes} setNotes={setNotes} />
+              <DashboardNotes notesType="notes" notes={notes} setNotes={setNotes} />
             ) : selectedTab === "shared" && sharedNotes.length > 0 ? (
-              <dashboardNotes notesType="shared" notes={sharedNotes} setNotes={setSharedNotes} />
+              <DashboardNotes notesType="shared" notes={sharedNotes} setNotes={setSharedNotes} />
             ) : (
               <div className="flex min-h-100 flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card text-card-foreground shadow-sm">
                 <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
                   {/* Note icon */} 
                   <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><line x1="16" x2="8" y1="13" y2="13" /><line x1="16" x2="8" y1="17" y2="17" /><line x1="10" x2="8" y1="9" y2="9" /></svg>
                 </div>
-                <h3 className="mt-4 text-lg font-semibold">No notes yet</h3>
+                <h3 className="mt-4 text-lg font-semibold">No {selectedTab === "shared" ? "shared notes" : "notes"} yet</h3>
                 <p className="mb-4 mt-2 text-sm text-muted-foreground">
-                  You haven&apos;t created any notes. Start writing now.
+                  {selectedTab === "shared"
+                    ? "Notes shared with you will appear here."
+                    : "You haven&apos;t created any notes. Start writing now."}
                 </p>
-                <Button onClick={handleCreateNote}>Create your first note</Button>
+                {selectedTab === "notes" && <Button onClick={handleCreateNote}>Create your first note</Button>}
               </div>
             )}
           </div>

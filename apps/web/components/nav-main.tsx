@@ -19,7 +19,9 @@ import {
 
 export function NavMain({
     items,
+    label = "Notes",
 }: {
+    label?: string
     items: {
         title: string
         url: string
@@ -33,7 +35,7 @@ export function NavMain({
 }) {
     return (
         <SidebarGroup>
-            <SidebarGroupLabel>notes</SidebarGroupLabel>
+            <SidebarGroupLabel>{label}</SidebarGroupLabel>
             <SidebarMenu>
                 {items.map((item) => (
                     <Collapsible

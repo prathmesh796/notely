@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { useParams } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { Button } from '@repo/ui/components/button'
 import { Spinner } from '@repo/ui/components/spinner'
 import { toast } from "sonner"
@@ -19,9 +20,11 @@ const MarkdownEditor = dynamic(() => import('../../../components/markdown-editor
 
 const NotePage = () => {
   const { note: noteId } = useParams<{ note: string }>();
+  const { data: session } = useSession();
 
   const [note, setNote] = useState<Note>();
   const [sidebarNotes, setSidebarNotes] = useState<SidebarNote[]>([]);
+  const [sharedSidebarNotes, setSharedSidebarNotes] = useState<SidebarNote[]>([]);
   const [noteContent, setNoteContent] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +35,8 @@ const NotePage = () => {
         const [data, notes] = await Promise.all([getNote(noteId), getNotes()]);
         setNote(data.note);
         setNoteContent(data.content);
-        setSidebarNotes(notes.map(({ id, title }) => ({ id, title })));
+        setSidebarNotes(notes.notes.map(({ id, title }) => ({ id, title })));
+        setSharedSidebarNotes(notes.sharedNotes.map(({ id, title }) => ({ id, title })));
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unable to load note");
         toast.error(error || "Unable to load note");
@@ -42,16 +46,23 @@ const NotePage = () => {
     };
 
     void fetchNote();
-  }, [noteId, error]);
+  }, [noteId]);
 
   const handleSave = async () => {
-
+    if (!note) return;
+    try {
+      await updateNoteContent(noteId, noteContent);
+      if (note.title !== undefined) await updateNoteMetadata(noteId, { title: note.title });
+      toast.success("Note saved");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to save note");
+    }
   }
 
   return (
     <div className="flex min-h-screen w-full bg-background text-foreground">
       {/* Sidebar */}
-      <AppSidebar notes={sidebarNotes} />
+      <AppSidebar notes={sidebarNotes} sharedNotes={sharedSidebarNotes} />
 
       {/* Main Content */}
       <div className="flex flex-col flex-1 min-w-0">
@@ -65,8 +76,8 @@ const NotePage = () => {
             />
           </div>
           <div className="flex items-center gap-4">
-            <AccessDialog noteId={noteId} editors={note?.editors || []} />
-            <Button variant="outline" size="sm" onClick={() => updateNoteContent(noteId, noteContent)}>Save</Button>
+            {note?.userId === session?.user?.id && <AccessDialog noteId={noteId} editors={note?.editors ?? []} />}
+            <Button variant="outline" size="sm" onClick={handleSave}>Save</Button>
             <ThemeToggle />
           </div>
         </header>
@@ -78,7 +89,7 @@ const NotePage = () => {
         ) : (
           <main className="flex-1 overflow-auto p-6 md:p-8">
             <div className="mx-auto max-w-4xl space-y-8">
-              {noteContent ? (
+              {note ? (
                 <MarkdownEditor
                   key={noteId}
                   markdown={noteContent}

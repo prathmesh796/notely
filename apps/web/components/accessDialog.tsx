@@ -55,13 +55,13 @@ export function AccessDialog({ noteId, editors }: { noteId: string, editors: str
                 <DialogHeader>
                     <DialogTitle>Manage Access</DialogTitle>
                     <DialogDescription>
-                        Update the editors for this note. Click save when you&apos;re
+                        Add the email addresses of people who can edit this note. Click save when you&apos;re
                         done.
                     </DialogDescription>
                 </DialogHeader>
                 <FieldGroup>
                     <Field>
-                        <Label htmlFor="editors">Editors</Label>
+                        <Label htmlFor="editors">People with access</Label>
                         <Input id="editors" name="editors"
                             placeholder="Enter editor email, etc."
                             value={inputValue}

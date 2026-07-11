@@ -73,7 +73,7 @@ export async function updateNoteMetadata(
   const data = await request<NoteResponse>(
     `/api/notes/${encodeURIComponent(id)}`,
     {
-      method: "PUT",
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...note }),
     },

@@ -4,7 +4,7 @@ import { Button } from '@repo/ui/components/button'
 import type { Note } from '@repo/types'
 import { deleteNote } from '../app/actions/notes';
 
-export const dashboardNotes = ({notesType, notes, setNotes}: { notesType: 'notes' | 'shared', notes: Note[], setNotes: React.Dispatch<React.SetStateAction<Note[]>> }) => {
+export const DashboardNotes = ({ notesType, notes, setNotes }: { notesType: 'notes' | 'shared', notes: Note[], setNotes: React.Dispatch<React.SetStateAction<Note[]>> }) => {
     
     const handleDeleteNote = async (id: string) => {
         await deleteNote(id);
@@ -18,18 +18,20 @@ export const dashboardNotes = ({notesType, notes, setNotes}: { notesType: 'notes
                     <Link href={`/dashboard/${encodeURIComponent(note.id)}`} className="">
                         <h3 className="text-lg font-semibold">{note.title}</h3>
                     </Link>
-                    <Button
-                        variant="destructive"
-                        size="sm"
-                        className="absolute top-2 right-2"
-                        onClick={() => handleDeleteNote(note.id)}
-                    >
-                        Delete
-                    </Button>
+                    {notesType === "notes" && (
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            className="absolute top-2 right-2"
+                            onClick={() => handleDeleteNote(note.id)}
+                        >
+                            Delete
+                        </Button>
+                    )}
                 </div>
             ))}
         </div>
     )
 }
 
-export default dashboardNotes
+export default DashboardNotes
