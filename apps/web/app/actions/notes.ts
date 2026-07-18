@@ -2,11 +2,16 @@ import type { Note } from "@repo/types";
 
 type NotesResponse = {
   notes: Note[];
+  sharedNotes: Note[];
 };
 
 type NoteResponse = {
   note: Note;
   content: string;
+};
+
+type CollaborationTokenResponse = {
+  token: string;
 };
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
@@ -20,14 +25,22 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
   return data;
 }
 
-export async function getNotes(): Promise<Note[]> {
+export async function getNotes(): Promise<{ notes: Note[]; sharedNotes: Note[] }> {
   const data = await request<NotesResponse>("/api/notes");
-  return data.notes as Note[];
+  return { notes: data.notes, sharedNotes: data.sharedNotes };
 }
 
 export async function getNote(id: string): Promise<{note: Note; content: string }> {
   const data = await request<NoteResponse>(`/api/notes/${encodeURIComponent(id)}`);
   return { note: data.note, content: data.content };
+}
+
+export async function getCollaborationToken(id: string): Promise<string> {
+  const data = await request<CollaborationTokenResponse>(
+    `/api/notes/${encodeURIComponent(id)}/collaboration-token`,
+    { method: "POST" },
+  );
+  return data.token;
 }
 
 export async function createNote(): Promise<Note> {
@@ -50,9 +63,8 @@ export async function deleteNote(id: string): Promise<Note> {
   return data.note;
 }
 
-export async function updateNote(
+export async function updateNoteContent(
   id: string,
-  note: Pick<Note, "title">,
   content: string
 ): Promise<Note> {
   const data = await request<NoteResponse>(
@@ -60,7 +72,22 @@ export async function updateNote(
     {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...note, content }),
+      body: JSON.stringify({ content }),
+    },
+  );
+  return data.note;
+}
+
+export async function updateNoteMetadata(
+  id: string,
+  note: Partial<Note>
+): Promise<Note> {
+  const data = await request<NoteResponse>(
+    `/api/notes/${encodeURIComponent(id)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...note }),
     },
   );
   return data.note;

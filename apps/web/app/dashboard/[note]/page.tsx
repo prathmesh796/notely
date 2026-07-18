@@ -1,16 +1,18 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
-import { signOut } from 'next-auth/react'
+import React, { useState, useEffect, useRef } from 'react'
+import type { MDXEditorMethods } from '@mdxeditor/editor'
 import dynamic from 'next/dynamic'
 import { useParams } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { Button } from '@repo/ui/components/button'
 import { Spinner } from '@repo/ui/components/spinner'
 import { toast } from "sonner"
 import { AppSidebar } from '../../../components/appSidebar'
 import { ThemeToggle } from '../../../components/theme-toggle'
+import { AccessDialog } from '../../../components/accessDialog'
 import { SidebarTrigger } from '@repo/ui/components/sidebar'
-import { getNote, getNotes, updateNote } from '../../actions/notes'
+import { getCollaborationToken, getNote, getNotes, updateNoteMetadata, updateNoteContent } from '../../actions/notes'
 import type { Note, SidebarNote } from '@repo/types'
 
 const MarkdownEditor = dynamic(() => import('../../../components/markdown-editor'), {
@@ -19,12 +21,17 @@ const MarkdownEditor = dynamic(() => import('../../../components/markdown-editor
 
 const NotePage = () => {
   const { note: noteId } = useParams<{ note: string }>();
+  const { data: session } = useSession();
 
   const [note, setNote] = useState<Note>();
   const [sidebarNotes, setSidebarNotes] = useState<SidebarNote[]>([]);
+  const [sharedSidebarNotes, setSharedSidebarNotes] = useState<SidebarNote[]>([]);
   const [noteContent, setNoteContent] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const [collaborationToken, setCollaborationToken] = useState<string | null>(null);
+  const socketRef = useRef<WebSocket | null>(null);
+  const editorRef = useRef<MDXEditorMethods>(null);
+  const applyingRemoteChange = useRef(false);
 
   useEffect(() => {
     const fetchNote = async () => {
@@ -32,22 +39,62 @@ const NotePage = () => {
         const [data, notes] = await Promise.all([getNote(noteId), getNotes()]);
         setNote(data.note);
         setNoteContent(data.content);
-        setSidebarNotes(notes.map(({ id, title }) => ({ id, title })));
+        setSidebarNotes(notes.notes.map(({ id, title }) => ({ id, title })));
+        setSharedSidebarNotes(notes.sharedNotes.map(({ id, title }) => ({ id, title })));
+        void getCollaborationToken(noteId).then(setCollaborationToken).catch(() => setCollaborationToken(null));
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Unable to load note");
-        toast.error(error || "Unable to load note");
+        toast.error(err instanceof Error ? err.message : "Unable to load note");
       } finally {
         setLoading(false);
       }
     };
 
     void fetchNote();
-  }, [noteId, error]);
+  }, [noteId]);
+
+  useEffect(() => {
+    if (!collaborationToken) return;
+
+    const socket = new WebSocket(process.env.NEXT_PUBLIC_WS_URL ?? 'ws://localhost:8080');
+    socketRef.current = socket;
+    socket.onopen = () => socket.send(JSON.stringify({ type: 'join-room', noteId, token: collaborationToken }));
+    socket.onmessage = (event) => {
+      const message = JSON.parse(event.data) as { type?: string; noteId?: string; content?: string };
+      if (message.type !== 'content' || message.noteId !== noteId || typeof message.content !== 'string') return;
+
+      applyingRemoteChange.current = true;
+      setNoteContent(message.content);
+      editorRef.current?.setMarkdown(message.content);
+      queueMicrotask(() => { applyingRemoteChange.current = false; });
+    };
+
+    return () => {
+      socket.close();
+      if (socketRef.current === socket) socketRef.current = null;
+    };
+  }, [collaborationToken, noteId]);
+
+  const handleEditorChange = (content: string) => {
+    setNoteContent(content);
+    if (applyingRemoteChange.current || socketRef.current?.readyState !== WebSocket.OPEN) return;
+    socketRef.current.send(JSON.stringify({ type: 'content', noteId, content }));
+  };
+
+  const handleSave = async () => {
+    if (!note) return;
+    try {
+      await updateNoteContent(noteId, noteContent);
+      if (note.title !== undefined) await updateNoteMetadata(noteId, { title: note.title });
+      toast.success("Note saved");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to save note");
+    }
+  }
 
   return (
     <div className="flex min-h-screen w-full bg-background text-foreground">
       {/* Sidebar */}
-      <AppSidebar notes={sidebarNotes} />
+      <AppSidebar notes={sidebarNotes} sharedNotes={sharedSidebarNotes} />
 
       {/* Main Content */}
       <div className="flex flex-col flex-1 min-w-0">
@@ -61,9 +108,9 @@ const NotePage = () => {
             />
           </div>
           <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" onClick={() => updateNote(noteId, { title: note?.title || "Untitled Note" }, noteContent)}>Save</Button>
+            {note?.userId === session?.user?.id && <AccessDialog noteId={noteId} editors={note?.editors ?? []} />}
+            <Button variant="outline" size="sm" onClick={handleSave}>Save</Button>
             <ThemeToggle />
-            <Button variant="outline" size="sm" onClick={() => signOut()}>Log out</Button>
           </div>
         </header>
 
@@ -74,11 +121,12 @@ const NotePage = () => {
         ) : (
           <main className="flex-1 overflow-auto p-6 md:p-8">
             <div className="mx-auto max-w-4xl space-y-8">
-              {noteContent ? (
+              {note ? (
                 <MarkdownEditor
                   key={noteId}
                   markdown={noteContent}
-                  onChange={setNoteContent}
+                  onChange={handleEditorChange}
+                  editorRef={editorRef}
                 />
               ) : (
                 <p>Note not found.</p>
