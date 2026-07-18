@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
+import type { MDXEditorMethods } from '@mdxeditor/editor'
 import dynamic from 'next/dynamic'
 import { useParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
@@ -11,7 +12,7 @@ import { AppSidebar } from '../../../components/appSidebar'
 import { ThemeToggle } from '../../../components/theme-toggle'
 import { AccessDialog } from '../../../components/accessDialog'
 import { SidebarTrigger } from '@repo/ui/components/sidebar'
-import { getNote, getNotes, updateNoteMetadata, updateNoteContent } from '../../actions/notes'
+import { getCollaborationToken, getNote, getNotes, updateNoteMetadata, updateNoteContent } from '../../actions/notes'
 import type { Note, SidebarNote } from '@repo/types'
 
 const MarkdownEditor = dynamic(() => import('../../../components/markdown-editor'), {
@@ -27,7 +28,10 @@ const NotePage = () => {
   const [sharedSidebarNotes, setSharedSidebarNotes] = useState<SidebarNote[]>([]);
   const [noteContent, setNoteContent] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const [collaborationToken, setCollaborationToken] = useState<string | null>(null);
+  const socketRef = useRef<WebSocket | null>(null);
+  const editorRef = useRef<MDXEditorMethods>(null);
+  const applyingRemoteChange = useRef(false);
 
   useEffect(() => {
     const fetchNote = async () => {
@@ -37,9 +41,9 @@ const NotePage = () => {
         setNoteContent(data.content);
         setSidebarNotes(notes.notes.map(({ id, title }) => ({ id, title })));
         setSharedSidebarNotes(notes.sharedNotes.map(({ id, title }) => ({ id, title })));
+        void getCollaborationToken(noteId).then(setCollaborationToken).catch(() => setCollaborationToken(null));
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Unable to load note");
-        toast.error(error || "Unable to load note");
+        toast.error(err instanceof Error ? err.message : "Unable to load note");
       } finally {
         setLoading(false);
       }
@@ -47,6 +51,34 @@ const NotePage = () => {
 
     void fetchNote();
   }, [noteId]);
+
+  useEffect(() => {
+    if (!collaborationToken) return;
+
+    const socket = new WebSocket(process.env.NEXT_PUBLIC_WS_URL ?? 'ws://localhost:8080');
+    socketRef.current = socket;
+    socket.onopen = () => socket.send(JSON.stringify({ type: 'join-room', noteId, token: collaborationToken }));
+    socket.onmessage = (event) => {
+      const message = JSON.parse(event.data) as { type?: string; noteId?: string; content?: string };
+      if (message.type !== 'content' || message.noteId !== noteId || typeof message.content !== 'string') return;
+
+      applyingRemoteChange.current = true;
+      setNoteContent(message.content);
+      editorRef.current?.setMarkdown(message.content);
+      queueMicrotask(() => { applyingRemoteChange.current = false; });
+    };
+
+    return () => {
+      socket.close();
+      if (socketRef.current === socket) socketRef.current = null;
+    };
+  }, [collaborationToken, noteId]);
+
+  const handleEditorChange = (content: string) => {
+    setNoteContent(content);
+    if (applyingRemoteChange.current || socketRef.current?.readyState !== WebSocket.OPEN) return;
+    socketRef.current.send(JSON.stringify({ type: 'content', noteId, content }));
+  };
 
   const handleSave = async () => {
     if (!note) return;
@@ -93,7 +125,8 @@ const NotePage = () => {
                 <MarkdownEditor
                   key={noteId}
                   markdown={noteContent}
-                  onChange={setNoteContent}
+                  onChange={handleEditorChange}
+                  editorRef={editorRef}
                 />
               ) : (
                 <p>Note not found.</p>

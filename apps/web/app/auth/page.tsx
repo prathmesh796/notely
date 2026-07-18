@@ -1,5 +1,5 @@
 'use client'
-import React, { useState } from 'react'
+import React, { Suspense, useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { signUp } from '../actions/signUp'
 import { useRouter } from 'next/navigation'
@@ -10,9 +10,9 @@ import { Marker, MarkerContent } from "@repo/ui/components/marker"
 import { Input } from '@repo/ui/components/input'
 import { ThemeToggle } from '../../components/theme-toggle'
 
-const Auth = () => {
+const AuthContent = () => {
     const searchParams = useSearchParams();
-    const auth: "login" | "signin" = searchParams.get("auth") as "login" | "signin";
+    const auth = searchParams.get("auth") === "login" ? "login" : "signin";
 
     const router = useRouter();
 
@@ -147,5 +147,11 @@ const Auth = () => {
         </div>
     )
 }
+
+const Auth = () => (
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+        <AuthContent />
+    </Suspense>
+)
 
 export default Auth

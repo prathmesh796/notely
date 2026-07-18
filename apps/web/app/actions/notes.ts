@@ -10,6 +10,10 @@ type NoteResponse = {
   content: string;
 };
 
+type CollaborationTokenResponse = {
+  token: string;
+};
+
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, init);
   const data = (await response.json()) as T & { error?: string; message?: string };
@@ -29,6 +33,14 @@ export async function getNotes(): Promise<{ notes: Note[]; sharedNotes: Note[] }
 export async function getNote(id: string): Promise<{note: Note; content: string }> {
   const data = await request<NoteResponse>(`/api/notes/${encodeURIComponent(id)}`);
   return { note: data.note, content: data.content };
+}
+
+export async function getCollaborationToken(id: string): Promise<string> {
+  const data = await request<CollaborationTokenResponse>(
+    `/api/notes/${encodeURIComponent(id)}/collaboration-token`,
+    { method: "POST" },
+  );
+  return data.token;
 }
 
 export async function createNote(): Promise<Note> {
